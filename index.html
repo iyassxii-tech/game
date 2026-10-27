@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesan Untuk Moyy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 100%);
+    overflow: hidden;
+    position: relative;
+}
+.particles { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.particle {
+    position: absolute;
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    opacity: 0;
+    animation: floatUp var(--duration, 15s) infinite linear;
+}
+@keyframes floatUp {
+    0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+    20% { opacity: var(--max-opacity, 0.5); }
+    80% { opacity: var(--max-opacity, 0.5); }
+    100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+}
+
+/* --- Layar --- */
+.screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 16px; text-align: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+/* --- Intro --- */
+#intro h1, #note h1 { font-size: 28px; font-weight: 600; color: #0f172a; }
+#msg, #note p { margin-top: 8px; min-height: 22px; font-size: 14px; color: #475569; }
+.btns { display: flex; gap: 16px; align-items: center; margin-top: 28px; }
+.slot { width: 110px; height: 48px; position: relative; }
+.btn {
+    font-family: inherit; font-size: 15px; font-weight: 600;
+    padding: 12px 28px; border: none; border-radius: 999px;
+    cursor: pointer; white-space: nowrap; touch-action: manipulation;
+}
+.yes { background: #38bdf8; color: #fff; box-shadow: 0 6px 18px rgba(56, 189, 248, 0.4); }
+.no { background: #fff; color: #64748b; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.no.run { position: fixed; z-index: 50; transition: left 0.25s ease, top 0.25s ease; }
+.no.give-up { background: #e0f2fe; color: #0284c7; }
+
+/* --- Game (umum) --- */
+.screen h2 { font-size: 20px; font-weight: 600; color: #0f172a; }
+.sub { font-size: 15px; font-weight: 600; color: #0284c7; margin: 4px 0 10px; }
+.tip { margin-top: 10px; font-size: 12px; color: #64748b; }
+.stage { position: relative; width: min(92vw, 360px); }
+.panel {
+    padding: 18px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
+}
+.win {
+    position: absolute; inset: 0;
+    display: flex; justify-content: center; align-items: center;
+    border-radius: 16px;
+    background: rgba(240, 249, 255, 0.92);
+    font-size: 22px; font-weight: 600; color: #0284c7;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 5;
+}
+.win.show { opacity: 1; }
+
+/* Game 1 & 3 (canvas) */
+#cv, #cv3 {
+    display: block; width: 100%; height: auto; touch-action: none;
+    background: rgba(255,255,255,0.55);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
+    transition: box-shadow 0.15s ease;
+}
+
+/* Game 2 */
+#board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.card {
+    aspect-ratio: 1; border: none; border-radius: 14px;
+    background: #bfdbfe; font-size: 28px; cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    touch-action: manipulation;
+}
+.card.open { background: #ffffff; }
+
+/* Game 4: Simon */
+#pads { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.pad {
+    aspect-ratio: 1.3; border: none; border-radius: 18px;
+    font-size: 36px; cursor: pointer; touch-action: manipulation;
+    opacity: 0.55; box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pad.lit { opacity: 1; transform: scale(1.05); box-shadow: 0 0 22px rgba(56, 189, 248, 0.9); }
+
+/* --- Amplop --- */
+.envelope-container {
+    position: relative; width: 320px; height: 220px;
+    cursor: pointer; z-index: 10;
+    transition: transform 0.4s ease;
+    filter: drop-shadow(0 20px 40px rgba(56, 189, 248, 0.15));
+}
+.envelope-container:hover { transform: translateY(-5px); }
+.envelope-back {
+    position: absolute; inset: 0; background: #93c5fd;
+    border-radius: 8px; z-index: 1;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.03);
+}
+.letter {
+    position: absolute; bottom: 10px; left: 15px; right: 15px; height: 200px;
+    background: #ffffff; border-radius: 12px; padding: 24px 20px; z-index: 2;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; text-align: left;
+    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 0s 0.8s;
+}
+.letter h2 { font-size: 18px; color: #0f172a; font-weight: 600; margin-bottom: 10px; }
+.letter p { font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 10px; }
+.envelope-front-sides {
+    position: absolute; inset: 0; background: #e0f2fe;
+    clip-path: polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%);
+    border-radius: 8px; z-index: 3;
+}
+.envelope-front-bottom {
+    position: absolute; inset: 0; background: #bfdbfe;
+    clip-path: polygon(0 100%, 50% 55%, 100% 100%);
+    border-radius: 8px; z-index: 4;
+    filter: drop-shadow(0 -2px 5px rgba(0,0,0,0.02));
+}
+.envelope-flap-wrapper {
+    position: absolute; top: 0; left: 0; width: 100%; height: 125px; z-index: 5;
+    transform-origin: top; transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s, z-index 0s 0.8s;
+    filter: drop-shadow(0px 8px 6px rgba(14, 165, 233, 0.15));
+}
+.envelope-flap { width: 100%; height: 100%; background: #bae6fd; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.seal {
+    position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 50%);
+    width: 44px; height: 44px; background: #38bdf8; border-radius: 50%;
+    border: 3px solid #ffffff; z-index: 6;
+    display: flex; justify-content: center; align-items: center;
+    color: white; font-size: 20px;
+    animation: pulse 2s infinite; transition: opacity 0.3s ease;
+}
+.seal::after { content: '♥'; margin-top: 2px; }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6); }
+    70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+}
+.hint-text {
+    position: absolute; bottom: -40px; left: 0; width: 100%;
+    text-align: center; color: #64748b; font-size: 13px; letter-spacing: 1px;
+    transition: opacity 0.4s ease;
+}
+.envelope-container.is-open .envelope-flap-wrapper {
+    transform: rotateX(180deg); z-index: 1;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.3s;
+}
+.envelope-container.is-open .letter {
+    transform: translateY(-180px);
+    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s;
+}
+.envelope-container.is-open .seal { opacity: 0; animation: none; }
+.envelope-container.is-open .hint-text { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div class="particles">
+    <div class="particle" style="left: 10%; width: 40px; height: 40px; --duration: 12s; --max-opacity: 0.3; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 25%; width: 80px; height: 80px; --duration: 18s; --max-opacity: 0.2; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 45%; width: 30px; height: 30px; --duration: 10s; --max-opacity: 0.4; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 65%; width: 90px; height: 90px; --duration: 22s; --max-opacity: 0.15; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 85%; width: 50px; height: 50px; --duration: 15s; --max-opacity: 0.35; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 55%; width: 60px; height: 60px; --duration: 16s; --max-opacity: 0.25; animation-delay: 7s;"></div>
+    <div class="particle" style="left: 15%; width: 70px; height: 70px; --duration: 20s; --max-opacity: 0.2; animation-delay: 6s;"></div>
+</div>
+
+<!-- Layar tanya -->
+<section class="screen active" id="intro">
+    <h1>Mau main game dulu?</h1>
+    <p id="msg">Sebentar aja kok, janji 💙</p>
+    <div class="btns">
+        <button id="yes" class="btn yes">Mau</button>
+        <div class="slot"><button id="no" class="btn no">Nggak</button></div>
+    </div>
+</section>
+
+<!-- Game 1: Tangkap Hati -->
+<section class="screen" id="g1">
+    <h2>Tangkap love biru</h2>
+    <p class="sub" id="score">0 / 10</p>
+    <div class="stage" id="st1"><canvas id="cv" width="360" height="520"></canvas></div>
+    <p class="tip">Tangkap 💙 aja, hindari ❤️ ⭐ 📚 ⏰. Geser untuk menggerakkan keranjang.</p>
+</section>
+
+<!-- Game 2: Kartu Emoji -->
+<section class="screen" id="g2">
+    <h2>Cocokkan kartunya</h2>
+    <p class="sub" id="pairs">0 / 6</p>
+    <div class="stage panel" id="st2"><div id="board"></div></div>
+    <p class="tip">Buka dua kartu, cari pasangan yang sama.</p>
+</section>
+
+<!-- Game 3: Capit Boneka -->
+<section class="screen" id="g3">
+    <h2>Capit kucing</h2>
+    <p class="sub" id="fb3">Capit boneka kucing 🐱 ya!</p>
+    <div class="stage" id="st3"><canvas id="cv3" width="360" height="420"></canvas></div>
+    <button class="btn yes" id="grab" style="margin-top: 12px;">Capit! 🕹️</button>
+</section>
+
+<!-- Game 4: Simon (urutan kotak) -->
+<section class="screen" id="g4">
+    <h2>Ingat urutannya</h2>
+    <p class="sub" id="moves"></p>
+    <div class="stage panel" id="st4">
+        <div id="pads">
+            <button class="pad" style="background:#7dd3fc">💙</button>
+            <button class="pad" style="background:#bfdbfe">🐱</button>
+            <button class="pad" style="background:#a5b4fc">🌙</button>
+            <button class="pad" style="background:#67e8f9">☕</button>
+        </div>
+    </div>
+    <p class="tip">Perhatikan kotak yang menyala, lalu ketuk sesuai urutannya. Kalau salah, diulang lagi kok.</p>
+</section>
+
+<!-- Layar transisi sebelum amplop -->
+<section class="screen" id="note">
+    <h1 id="noteTitle"></h1>
+    <p id="noteSub"></p>
+</section>
+
+<!-- Amplop -->
+<section class="screen" id="final">
+    <div class="envelope-container" id="envelope">
+        <div class="envelope-back"></div>
+        <div class="letter">
+            <h2>Hai Moyyy,</h2>
+            <p>moyyy kamu jangan terlalu keras ya belajarnya, TKA besok pasti aman kok.</p>
+            <p>Semangat ya, istirahat yang cukup biar besok fresh.</p>
+        </div>
+        <div class="envelope-front-sides"></div>
+        <div class="envelope-front-bottom"></div>
+        <div class="envelope-flap-wrapper">
+            <div class="envelope-flap"></div>
+            <div class="seal"></div>
+        </div>
+        <p class="hint-text">Ketuk untuk membuka</p>
+    </div>
+</section>
+
+<script>
+/* ===== Pengaturan (ubah di sini) ===== */
+const TARGET = 10;      // game 1: berapa yang harus ditangkap
+const MAX_DODGE = 7;    // tombol "Nggak" kabur berapa kali sebelum menyerah
+const MSGS = [
+    "Eh, kok kabur?",
+    "Tombolnya malu 😳",
+    "Coba pencet lagi",
+    "Tombolnya takut sama kamu",
+    "Yakin gak mau? 🥺",
+    "Aku udah bikin lama lho...",
+    "Tinggal pencet \"Mau\" aja 💙"
+];
+const MISS_MSGS = ["Hampir! Coba lagi 😆", "Yah, meleset 🥺 coba lagi", "Dikit lagi! 💪"];
+/* Layar tulisan sebelum amplop muncul */
+const NOTE_TITLE = "Ada surat buat kamu nih 💌";
+const NOTE_SUB = "Dibuka ya, jangan lupa senyum 😊";
+const NOTE_MS = 3800;   // berapa lama tulisannya tampil (milidetik)
+
+const $ = id => document.getElementById(id);
+const show = id => document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function finish(stage, text, next) {
+    const w = document.createElement('div');
+    w.className = 'win';
+    w.textContent = text;
+    stage.appendChild(w);
+    void w.offsetWidth;
+    w.classList.add('show');
+    setTimeout(next, 2200);
+}
+
+/* ===== Layar tanya ===== */
+const yes = $('yes'), no = $('no'), msg = $('msg');
+let dodges = 0, giveUp = false;
+
+function dodge() {
+    if (giveUp) return;
+    if (!no.classList.contains('run')) {
+        const r = no.getBoundingClientRect();
+        no.style.left = r.left + 'px';
+        no.style.top = r.top + 'px';
+        no.classList.add('run');
+        void no.offsetWidth;
+    }
+    dodges++;
+    if (dodges >= MAX_DODGE) {
+        giveUp = true;
+        no.textContent = 'Ya udah, mau 🙄';
+        no.classList.add('give-up');
+        msg.textContent = 'Nah gitu dong 😆';
+        return;
+    }
+    msg.textContent = MSGS[(dodges - 1) % MSGS.length];
+    const w = no.offsetWidth, h = no.offsetHeight, m = 12;
+    const yr = yes.getBoundingClientRect();
+    const cx = parseFloat(no.style.left), cy = parseFloat(no.style.top);
+    let x, y;
+    for (let i = 0; i < 30; i++) {
+        x = m + Math.random() * (innerWidth - w - 2 * m);
+        y = m + Math.random() * (innerHeight - h - 2 * m);
+        const hit = x < yr.right + 20 && x + w > yr.left - 20 && y < yr.bottom + 20 && y + h > yr.top - 20;
+        if (!hit && Math.hypot(x - cx, y - cy) > 120) break;
+    }
+    no.style.left = x + 'px';
+    no.style.top = y + 'px';
+}
+no.addEventListener('pointerenter', dodge);
+no.addEventListener('pointerdown', e => { if (!giveUp) { e.preventDefault(); dodge(); } });
+no.addEventListener('focus', dodge);
+no.addEventListener('click', () => { giveUp ? startG1() : dodge(); });
+yes.addEventListener('click', startG1);
+
+/* ===== Game 1: Tangkap Hati ===== */
+const cv = $('cv'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+const basket = { x: W / 2, w: 84, h: 26, y: H - 56 };
+const GOOD = ['💙'], BAD = ['❤️', '⭐', '📚', '⏰'];
+let items = [], score = 0, running = false, last = 0, spawn = 0, dir = 0, flashTimer;
+const setScore = () => { $('score').textContent = score + ' / ' + TARGET; };
+
+function startG1() {
+    if (running) return;
+    score = 0; items = []; spawn = 0;
+    setScore();
+    show('g1');
+    running = true;
+    last = performance.now();
+    requestAnimationFrame(loop);
+}
+function flash(good) {
+    cv.style.boxShadow = '0 0 0 4px ' + (good ? '#4ade80' : '#fb7185');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { cv.style.boxShadow = ''; }, 180);
+}
+function loop(t) {
+    const dt = Math.min((t - last) / 1000, 0.05);
+    last = t;
+    basket.x = Math.max(basket.w / 2, Math.min(W - basket.w / 2, basket.x + dir * 340 * dt));
+    spawn -= dt;
+    if (spawn <= 0) {
+        spawn = 1.0;
+        const good = Math.random() < 0.35;
+        items.push({ x: 26 + Math.random() * (W - 52), y: -26, v: 80 + Math.random() * 40, r: 22, good: good, e: pick(good ? GOOD : BAD) });
+    }
+    items = items.filter(it => {
+        it.y += it.v * dt;
+        const caught = it.y + it.r >= basket.y && it.y - it.r <= basket.y + basket.h &&
+                       Math.abs(it.x - basket.x) < basket.w / 2 + it.r * 0.5;
+        if (caught) {
+            score = it.good ? score + 1 : Math.max(0, score - 1);
+            setScore();
+            flash(it.good);
+            if (score >= TARGET && running) {
+                running = false;
+                finish($('st1'), 'Level 1 selesai! 🎉', startG2);
+            }
+            return false;
+        }
+        return it.y - it.r < H;
+    });
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '32px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    items.forEach(it => ctx.fillText(it.e, it.x, it.y));
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(basket.x - basket.w / 2, basket.y, basket.w, basket.h, 10);
+    else ctx.rect(basket.x - basket.w / 2, basket.y, basket.w, basket.h);
+    ctx.fill();
+    if (running) requestAnimationFrame(loop);
+}
+function moveBasket(e) {
+    const r = cv.getBoundingClientRect();
+    basket.x = Math.max(basket.w / 2, Math.min(W - basket.w / 2, (e.clientX - r.left) * W / r.width));
+}
+cv.addEventListener('pointermove', moveBasket);
+cv.addEventListener('pointerdown', moveBasket);
+window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') dir = -1;
+    if (e.key === 'ArrowRight' || e.key === 'd') dir = 1;
+    if (e.key === ' ' && g3run) drop();
+});
+window.addEventListener('keyup', () => { dir = 0; });
+
+/* ===== Game 2: Cocokkan Kartu Emoji ===== */
+function startG2() {
+    show('g2');
+    const em = ['🍜', '🐱', '🌙', '☕', '🎧', '🍓'];
+    const deck = [...em, ...em].sort(() => Math.random() - 0.5);
+    const board = $('board');
+    let open = [], found = 0, lock = false;
+    board.innerHTML = '';
+    $('pairs').textContent = '0 / ' + em.length;
+    deck.forEach(e => {
+        const b = document.createElement('button');
+        b.className = 'card';
+        b.textContent = '💙';
+        b.onclick = () => {
+            if (lock || b.classList.contains('open')) return;
+            b.classList.add('open');
+            b.textContent = e;
+            open.push(b);
+            if (open.length < 2) return;
+            if (open[0].textContent === open[1].textContent) {
+                found++;
+                open = [];
+                $('pairs').textContent = found + ' / ' + em.length;
+                if (found === em.length) finish($('st2'), 'Level 2 selesai! 🎉', startG3);
+            } else {
+                lock = true;
+                setTimeout(() => {
+                    open.forEach(x => { x.classList.remove('open'); x.textContent = '💙'; });
+                    open = [];
+                    lock = false;
+                }, 700);
+            }
+        };
+        board.appendChild(b);
+    });
+}
+
+/* ===== Game 3: Capit Boneka ===== */
+const cv3 = $('cv3'), c3 = cv3.getContext('2d'), H3 = cv3.height;
+let dolls = [], claw = null, g3run = false, g3last = 0, misses = 0;
+
+function startG3() {
+    show('g3');
+    misses = 0;
+    $('fb3').textContent = 'Capit boneka kucing 🐱 ya!';
+    const em = ['🐻', '🐰', '🐱', '🐼', '🐶', '🦊'].sort(() => Math.random() - 0.5);
+    dolls = em.map((e, i) => ({ e: e, x: 40 + i * 56, y: H3 - 62 }));
+    claw = { x: W / 2, dir: 1, len: 40, state: 'swing', caught: null };
+    g3run = true;
+    g3last = performance.now();
+    requestAnimationFrame(loop3);
+}
+function drop() {
+    if (g3run && claw.state === 'swing') claw.state = 'down';
+}
+function showNote() {
+    $('noteTitle').textContent = NOTE_TITLE;
+    $('noteSub').textContent = NOTE_SUB;
+    show('note');
+    setTimeout(() => show('final'), NOTE_MS);
+}
+function loop3(t) {
+    const dt = Math.min((t - g3last) / 1000, 0.05);
+    g3last = t;
+
+    if (claw.state === 'swing') {
+        claw.x += claw.dir * 85 * dt;
+        if (claw.x > W - 30) { claw.x = W - 30; claw.dir = -1; }
+        if (claw.x < 30) { claw.x = 30; claw.dir = 1; }
+    } else if (claw.state === 'down') {
+        claw.len += 190 * dt;
+        if (claw.len >= H3 - 100) {
+            claw.len = H3 - 100;
+            /* makin sering meleset, area tangkapnya makin lebar (biar tidak frustrasi) */
+            const reach = 36 + misses * 14;
+            let best = null, bd = 1e9;
+            dolls.forEach(d => { const dd = Math.abs(d.x - claw.x); if (dd < bd) { bd = dd; best = d; } });
+            if (best && bd <= reach) {
+                claw.caught = best;
+                claw.home = { x: best.x, y: best.y };
+                dolls = dolls.filter(d => d !== best);
+            }
+            claw.state = 'up';
+        }
+    } else if (claw.state === 'up') {
+        claw.len -= 160 * dt;
+        if (claw.caught) { claw.caught.x = claw.x; claw.caught.y = claw.len + 34; }
+        if (claw.len <= 40) {
+            claw.len = 40;
+            if (claw.caught && claw.caught.e === '🐱') {
+                g3run = false;
+                finish($('st3'), 'Dapat ' + claw.caught.e + ' 🎉', startG4);
+            } else if (claw.caught) {
+                /* salah boneka: kembalikan ke tempat semula, ulang lagi */
+                const wrong = claw.caught;
+                wrong.x = claw.home.x;
+                wrong.y = claw.home.y;
+                dolls.push(wrong);
+                claw.caught = null;
+                misses++;
+                $('fb3').textContent = 'Itu bukan kucing 😆 ulang lagi ya!';
+                claw.state = 'swing';
+            } else {
+                misses++;
+                $('fb3').textContent = pick(MISS_MSGS);
+                claw.state = 'swing';
+            }
+        }
+    }
+
+    c3.clearRect(0, 0, W, H3);
+    c3.fillStyle = '#93c5fd';
+    c3.fillRect(0, 0, W, 12);
+    c3.fillStyle = '#bfdbfe';
+    c3.fillRect(0, H3 - 28, W, 28);
+    c3.font = '40px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    c3.textAlign = 'center';
+    c3.textBaseline = 'middle';
+    dolls.forEach(d => c3.fillText(d.e, d.x, d.y));
+    if (claw.caught) c3.fillText(claw.caught.e, claw.caught.x, claw.caught.y);
+    c3.strokeStyle = '#64748b';
+    c3.lineWidth = 3;
+    c3.beginPath();
+    c3.moveTo(claw.x, 12);
+    c3.lineTo(claw.x, claw.len);
+    c3.stroke();
+    const spread = (claw.state === 'swing' || claw.state === 'down') ? 18 : 6;
+    c3.beginPath();
+    c3.moveTo(claw.x - spread, claw.len + 22);
+    c3.lineTo(claw.x - 4, claw.len);
+    c3.lineTo(claw.x + 4, claw.len);
+    c3.lineTo(claw.x + spread, claw.len + 22);
+    c3.stroke();
+    c3.fillStyle = '#0284c7';
+    c3.beginPath();
+    c3.arc(claw.x, claw.len, 7, 0, Math.PI * 2);
+    c3.fill();
+
+    if (g3run) requestAnimationFrame(loop3);
+}
+$('grab').addEventListener('click', drop);
+cv3.addEventListener('pointerdown', drop);
+
+/* ===== Game 4: Simon (ingat urutan) ===== */
+const ROUNDS = 4;       // jumlah ronde
+const START_LEN = 1;    // panjang urutan di ronde pertama (naik 1 tiap ronde)
+function startG4() {
+    show('g4');
+    const pads = Array.from(document.querySelectorAll('.pad'));
+    const seq = [];
+    for (let i = 0; i < ROUNDS + START_LEN - 1; i++) seq.push(Math.floor(Math.random() * pads.length));
+    let round = 0, pos = 0, accept = false, done = false;
+    const len = () => round + START_LEN;
+    const label = t => { $('moves').textContent = 'Ronde ' + (round + 1) + ' / ' + ROUNDS + ' · ' + t; };
+    const lit = k => {
+        pads[k].classList.add('lit');
+        setTimeout(() => pads[k].classList.remove('lit'), 400);
+    };
+    function play() {
+        accept = false; pos = 0;
+        label('Perhatikan 👀');
+        let i = 0;
+        setTimeout(function step() {
+            if (i >= len()) { accept = true; label('Giliran kamu 👆'); return; }
+            lit(seq[i]);
+            i++;
+            setTimeout(step, 750);
+        }, 800);
+    }
+    pads.forEach((p, k) => {
+        p.onclick = () => {
+            if (!accept || done) return;
+            lit(k);
+            if (k === seq[pos]) {
+                pos++;
+                if (pos === len()) {
+                    accept = false;
+                    round++;
+                    if (round === ROUNDS) {
+                        done = true;
+                        $('moves').textContent = 'Semua benar! 🎉';
+                        finish($('st4'), 'Level 4 selesai! 🎉', showNote);
+                    } else {
+                        $('moves').textContent = 'Benar! 🎉';
+                        setTimeout(play, 1000);
+                    }
+                }
+            } else {
+                accept = false;
+                $('moves').textContent = 'Yah salah 🥺 lihat lagi ya';
+                setTimeout(play, 1300);
+            }
+        };
+    });
+    play();
+}
+
+/* ===== Amplop ===== */
+const envelope = $('envelope');
+envelope.addEventListener('click', () => envelope.classList.toggle('is-open'));
+</script>
+</body>
+</html>
